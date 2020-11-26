@@ -1,4 +1,5 @@
 import caldav
+import time
 from datetime import date, datetime, timedelta
 
 class CalDAVIndicator(object):
@@ -28,23 +29,25 @@ class CalDAVIndicator(object):
                 self.password = value
 
     def main_loop(self):
-        todays_events = self.calendar.date_search(
-            start = datetime.now(), end = datetime.now(), expand = False
-        )
-        for te in todays_events:
-            event_name = te.vobject_instance.vevent.summary.value
-            event_start = te.vobject_instance.vevent.dtstart.value
-            event_end = te.vobject_instance.vevent.dtend.value
-            participants = te.vobject_instance.vevent.contents.get('attendee')
-            if participants is not None:
-                print(event_name, event_start, event_end)
-                participant_names = []
-                for p in participants:
-                    name = p.params.get('CN')[0]
-                    status = p.params.get('PARTSTAT')[0]
-                    if status == "ACCEPTED" and not "Konferenzraum" in name:
-                        participant_names.append(name)
-                print(participant_names)
+        while True:
+            current_events = self.calendar.date_search(
+                start = datetime.now() - timedelta(days = 10), end = datetime.now() + timedelta(minutes = 5), expand = False
+            )
+            for te in current_events:
+                event_name = te.vobject_instance.vevent.summary.value
+                event_start = te.vobject_instance.vevent.dtstart.value
+                event_end = te.vobject_instance.vevent.dtend.value
+                participants = te.vobject_instance.vevent.contents.get('attendee')
+                if participants is not None:
+                    print(event_name, event_start, event_end)
+                    participant_names = []
+                    for p in participants:
+                        name = p.params.get('CN')[0]
+                        status = p.params.get('PARTSTAT')[0]
+                        if status == "ACCEPTED" and not "Konferenzraum" in name:
+                            participant_names.append(name)
+                    print(participant_names)
+            time.sleep(self.POLL_TIMEOUT)
 
 if __name__ == '__main__':
     CalDAVIndicator().main_loop()
