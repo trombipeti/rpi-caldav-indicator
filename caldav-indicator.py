@@ -1,6 +1,5 @@
 import caldav
-from datetime import date, datetime, timedelta, tzinfo
-import pytz
+from datetime import date, datetime, timedelta
 
 class CalDAVIndicator(object):
 
@@ -29,7 +28,9 @@ class CalDAVIndicator(object):
                 self.password = value
 
     def main_loop(self):
-        todays_events = self.calendar.date_search(start = datetime.now(), end = datetime.now(), expand = False)
+        todays_events = self.calendar.date_search(
+            start = datetime.now(), end = datetime.now(), expand = False
+        )
         for te in todays_events:
             event_name = te.vobject_instance.vevent.summary.value
             event_start = te.vobject_instance.vevent.dtstart.value
@@ -37,6 +38,13 @@ class CalDAVIndicator(object):
             participants = te.vobject_instance.vevent.contents.get('attendee')
             if participants is not None:
                 print(event_name, event_start, event_end)
+                participant_names = []
+                for p in participants:
+                    name = p.params.get('CN')[0]
+                    status = p.params.get('PARTSTAT')[0]
+                    if status == "ACCEPTED" and not "Konferenzraum" in name:
+                        participant_names.append(name)
+                print(participant_names)
 
 if __name__ == '__main__':
     CalDAVIndicator().main_loop()
