@@ -41,9 +41,9 @@ class CalDAVIndicator(object):
                 self.password = input("Input CalDAV calendar password: ")
             with open('secret.txt', 'w') as sf:
                 sf.write(
-                    f'url={self.url}\n'
-                    f'username={self.username}\n'
-                    f'password={self.password}'
+                    'url=' + self.url + '\n' +
+                    'username=' + self.username + '\n' +
+                    'password=' + self.password + ''
                 )
 
     def main_loop(self):
