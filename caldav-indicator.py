@@ -44,9 +44,10 @@ class CalDAVIndicator(object):
                 )
 
     def main_loop(self):
+        first_run = True
         while True:
             current_events = self.calendar.date_search(
-                start = datetime.now(), end = datetime.now() + timedelta(minutes = 5), expand = False
+                start = datetime.now(), end = datetime.now(), expand = False
             )
             if len(current_events) > 0:
                 current_event = current_events[0]
@@ -68,8 +69,11 @@ class CalDAVIndicator(object):
             else:
                 if self.current_event:
                     print("Ended")
+                if first_run:
+                    print("No current event")
                 self.current_event = None
             time.sleep(self.POLL_TIMEOUT)
+            first_run = False
 
 if __name__ == '__main__':
     CalDAVIndicator().main_loop()
