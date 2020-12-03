@@ -15,19 +15,33 @@ class CalDAVIndicator(object):
         self.current_event = None
 
     def _parse_secret_file(self):
-        with open('secret.txt', 'r') as sf:
-            secret_lines = sf.readlines()
+        try:
+            with open('secret.txt', 'r') as sf:
+                secret_lines = sf.readlines()
 
-        for sl in secret_lines:
-            data = sl.split('=')
-            key = data[0].strip()
-            value = data[1].strip()
-            if key == 'url':
-                self.url = value
-            elif key == 'username':
-                self.username = value
-            elif key == 'password':
-                self.password = value
+            for sl in secret_lines:
+                data = sl.split('=')
+                key = data[0].strip()
+                value = data[1].strip()
+                if key == 'url':
+                    self.url = value
+                elif key == 'username':
+                    self.username = value
+                elif key == 'password':
+                    self.password = value
+            if self.url is None or self.username is None or self.password is None:
+                raise ValueError("secret.txt malformed")
+        except FileNotFoundError:
+            print("Secret file not found, creating")
+            self.url = input("Input CalDAV calendar URL: ")
+            self.username = input("Input CalDAV calendar username: ")
+            self.password = input("Input CalDAV calendar password: ")
+            with open('secret.txt', 'w') as sf:
+                sf.write(
+                    f'url={self.url}\n'
+                    f'username={self.username}\n'
+                    f'password={self.password}'
+                )
 
     def main_loop(self):
         while True:
