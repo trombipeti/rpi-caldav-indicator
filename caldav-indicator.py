@@ -33,9 +33,12 @@ class CalDAVIndicator(object):
                 raise ValueError("secret.txt malformed")
         except FileNotFoundError:
             print("Secret file not found, creating")
-            self.url = input("Input CalDAV calendar URL: ")
-            self.username = input("Input CalDAV calendar username: ")
-            self.password = input("Input CalDAV calendar password: ")
+            while self.url is None or len(self.url) == 0:
+                self.url = input("Input CalDAV calendar URL: ")
+            while self.username is None or len(self.username) == 0:
+                self.username = input("Input CalDAV calendar username: ")
+            while self.password is None or len(self.password) == 0:
+                self.password = input("Input CalDAV calendar password: ")
             with open('secret.txt', 'w') as sf:
                 sf.write(
                     f'url={self.url}\n'
