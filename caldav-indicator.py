@@ -61,14 +61,16 @@ class CalDAVIndicator(object):
                     event_end = current_event.vobject_instance.vevent.dtend.value
                     participants = current_event.vobject_instance.vevent.contents.get('attendee')
                     if participants is not None:
-                        print(event_name, event_start, event_end)
                         participant_names = []
                         for p in participants:
                             name = p.params.get('CN')[0]
                             status = p.params.get('PARTSTAT')[0]
                             if status == "ACCEPTED" and not "Konferenzraum" in name:
                                 participant_names.append(name)
+                        print(event_name, event_start.strftime("%H:%M") + " - " + event_end.strftime("%H:%M"))
                         print(participant_names)
+                    else:
+                        print(event_name, "- without participants")
             else:
                 if self.current_event:
                     print("Ended")
