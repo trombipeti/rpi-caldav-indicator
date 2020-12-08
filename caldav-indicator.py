@@ -1,6 +1,12 @@
 import caldav
 import time
 from datetime import date, datetime, timedelta
+from RPLCD.gpio import CharLCD
+
+class LCDIndicator(object):
+    def __init__(self):
+        super(LCDIndicator, self).__init__()
+
 
 class CalDAVIndicator(object):
 
