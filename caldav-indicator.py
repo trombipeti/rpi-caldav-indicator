@@ -1,5 +1,6 @@
 import caldav
 import time
+from timeit import default_timer as timer
 from datetime import date, datetime, timedelta
 try:
     from RPLCD.gpio import CharLCD
@@ -10,13 +11,96 @@ import requests
 from requests.auth import HTTPBasicAuth
 import json
 
+class CalendarDisplayEvent(object):
+    def __init__(self, name, start_time, end_time, participants):
+        super(CalendarDisplayEvent, self).__init__()
+        self.name = name
+        self.start_time = start_time
+        self.end_time = end_time
+        self.participants = participants
+
+    def __eq__(self, other):
+        return other and self.name == other.name and self.start_time == other.start_time and self.end_time == other.end_time
+
+
 class LCDIndicator(object):
     def __init__(self):
         super(LCDIndicator, self).__init__()
+        self.current_event = None
+        self.is_lcd_on = False
+        self._first_line_position = 0
+        self._first_line = ""
+        self._second_line_position = 0
+        self._second_line = ""
+
+    def _turn_off_lcd(self):
+        self.is_lcd_on = False
+        pass
+
+    def _turn_on_lcd(self):
+        self.is_lcd_on = True
+        pass
+
+    def _scroll_line(self, line, current_start):
+        if len(line) <= 16:
+            return (line, current_start)
+        else:
+            double_line = line + " "*6 + line[0:10]
+            line_part = double_line[current_start : current_start + 16]
+            if current_start == len(line):
+                current_start = 0
+            else:
+                current_start += 1
+            return (line_part, current_start)
+
+    def _display_first_line(self):
+        if has_lcd:
+            pass
+        elif self.is_lcd_on:
+            scroll_data = self._scroll_line(self._first_line, self._first_line_position)
+            line = scroll_data[0]
+            self._first_line_position = scroll_data[1]
+            print("F:", line)
+
+    def _display_second_line(self):
+        if has_lcd:
+            pass
+        elif self.is_lcd_on:
+            scroll_data = self._scroll_line(self._second_line, self._second_line_position)
+            line = scroll_data[0]
+            self._second_line_position = scroll_data[1]
+            print("S:", line)
+
+    def _on_new_event(self):
+        self._first_line_position = 0
+        self._first_line = '{0} {1}-{2}'.format(self.current_event.name, self.current_event.start_time, self.current_event.end_time)
+        self._second_line_position = 0
+        self._second_line = ', '.join(self.current_event.participants)
+
+    def set_current_event(self, event):
+        new_event = False
+        if self.current_event is not None and event is None:
+            print(self.current_event.name, "ended")
+        elif self.current_event != event:
+            new_event = True
+        self.current_event = event
+        if new_event:
+            self._on_new_event()
+
+    def update_display(self):
+        if self.current_event is not None:
+            if not self.is_lcd_on:
+                self._turn_on_lcd()
+            self._display_first_line()
+            self._display_second_line()
+            pass
+        elif self.is_lcd_on:
+            self._turn_off_lcd()
+
 
 class CalDAVIndicator(object):
 
-    POLL_TIMEOUT = 10 # 10 seconds
+    POLL_TIMEOUT = 60 # 10 seconds
 
     def __init__(self):
         super(CalDAVIndicator, self).__init__()
@@ -24,7 +108,7 @@ class CalDAVIndicator(object):
         self._parse_secret_file()
         self.client = caldav.DAVClient(url = self.url, username =  self.username, password = self.password)
         self.calendar = caldav.Calendar(client = self.client, url = self.url)
-        self.current_event = None
+        self.lcd_indicator = LCDIndicator()
 
     def _parse_secret_file(self):
         try:
@@ -72,38 +156,39 @@ class CalDAVIndicator(object):
     def main_loop(self):
         first_run = True
         while True:
-            if self.is_working_toggl():
+            if self.is_working_toggl() or True:
                 current_events = self.calendar.date_search(
-                    start = datetime.now(), end = datetime.now(), expand = False
+                    start = datetime.now() - timedelta(days = 3), end = datetime.now(), expand = False
                 )
                 if len(current_events) > 0:
                     current_event = current_events[0]
-                    if str(self.current_event) != str(current_event):
-                        self.current_event = current_event
-                        event_name = current_event.vobject_instance.vevent.summary.value
-                        event_start = current_event.vobject_instance.vevent.dtstart.value
-                        event_end = current_event.vobject_instance.vevent.dtend.value
-                        participants = current_event.vobject_instance.vevent.contents.get('attendee')
-                        if participants is not None:
-                            participant_names = []
-                            for p in participants:
-                                name = p.params.get('CN')[0]
-                                status = p.params.get('PARTSTAT')[0]
-                                if status == "ACCEPTED" and not "Konferenzraum" in name:
-                                    participant_names.append(name)
-                            print(event_name, event_start.strftime("%H:%M") + " - " + event_end.strftime("%H:%M"))
-                            print(participant_names)
-                        else:
-                            print(event_name, "- without participants")
+                    event_name = current_event.vobject_instance.vevent.summary.value
+                    event_start = current_event.vobject_instance.vevent.dtstart.value.strftime("%-H:%M")
+                    event_end = current_event.vobject_instance.vevent.dtend.value.strftime("%-H:%M")
+                    participants = current_event.vobject_instance.vevent.contents.get('attendee')
+                    participant_names = []
+                    if participants is not None:
+                        for p in participants:
+                            name = p.params.get('CN')[0]
+                            status = p.params.get('PARTSTAT')[0]
+                            if status == "ACCEPTED" and not "Konferenzraum" in name:
+                                if ',' in name:
+                                    parts = name.split(',')
+                                    name = parts[1].strip() + ' ' + parts[0].strip()
+                                participant_names.append(name)
+                    else:
+                        print(event_name, "- without participants")
+                    display_event = CalendarDisplayEvent(event_name, event_start, event_end, participant_names)
+                    self.lcd_indicator.set_current_event(display_event)
                 else:
-                    if self.current_event:
-                        print("Ended")
-                    if first_run:
-                        print("No current event")
-                    self.current_event = None
+                    self.lcd_indicator.set_current_event(None)
             else:
                 print("Not working")
-            time.sleep(self.POLL_TIMEOUT)
+                self.lcd_indicator.set_current_event(None)
+            start = timer()
+            while (timer() - start) < self.POLL_TIMEOUT:
+                self.lcd_indicator.update_display()
+                time.sleep(0.1)
             first_run = False
 
 if __name__ == '__main__':
