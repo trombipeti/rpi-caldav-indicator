@@ -1,6 +1,7 @@
 import caldav
 import time
 from timeit import default_timer as timer
+import threading
 from datetime import date, datetime, timedelta
 try:
     from RPLCD.gpio import CharLCD
@@ -24,6 +25,9 @@ class CalendarDisplayEvent(object):
 
 
 class LCDIndicator(object):
+
+    DISPLAY_UPDATE_FREQ = 5 # Hz
+
     def __init__(self):
         super(LCDIndicator, self).__init__()
         self.current_event = None
@@ -32,6 +36,11 @@ class LCDIndicator(object):
         self._first_line = ""
         self._second_line_position = 0
         self._second_line = ""
+
+        self._display_thread = threading.Thread(target = self._update_display_loop, args = ())
+        self._display_thread_lock = threading.Lock()
+        self._stop_display_thread = False
+        self._event_lock = threading.Lock()
 
     def _turn_off_lcd(self):
         self.is_lcd_on = False
@@ -78,17 +87,40 @@ class LCDIndicator(object):
         self._second_line = ', '.join(self.current_event.participants)
 
     def set_current_event(self, event):
-        new_event = False
-        if self.current_event is not None and event is None:
-            print(self.current_event.name, "ended")
-        elif self.current_event != event:
-            new_event = True
-        self.current_event = event
-        if new_event:
-            self._on_new_event()
+        with self._event_lock:
+            new_event = False
+            if self.current_event is not None and event is None:
+                print(self.current_event.name, "ended")
+            elif self.current_event != event:
+                new_event = True
+            self.current_event = event
+            if new_event:
+                self._on_new_event()
 
-    def update_display(self):
-        if self.current_event is not None:
+    def get_current_event(self):
+        with self._event_lock:
+            return self.current_event
+
+    def start_display_thread(self):
+        self._display_thread.start()
+
+    def stop_display_thread(self):
+        with self._display_thread_lock:
+            self._stop_display_thread = True
+        self._display_thread.join()
+
+    def _should_stop_display_thread(self):
+        with self._display_thread_lock:
+            return self._stop_display_thread
+
+    def _update_display_loop(self):
+        while not self._should_stop_display_thread():
+            self._update_display()
+            time.sleep(1.0 / self.DISPLAY_UPDATE_FREQ)
+
+    def _update_display(self):
+        current_event = self.get_current_event()
+        if current_event is not None:
             if not self.is_lcd_on:
                 self._turn_on_lcd()
             self._display_first_line()
@@ -155,6 +187,7 @@ class CalDAVIndicator(object):
 
     def main_loop(self):
         first_run = True
+        self.lcd_indicator.start_display_thread()
         while True:
             if self.is_working_toggl() or True:
                 current_events = self.calendar.date_search(
@@ -185,10 +218,7 @@ class CalDAVIndicator(object):
             else:
                 print("Not working")
                 self.lcd_indicator.set_current_event(None)
-            start = timer()
-            while (timer() - start) < self.POLL_TIMEOUT:
-                self.lcd_indicator.update_display()
-                time.sleep(0.1)
+            time.sleep(self.POLL_TIMEOUT)
             first_run = False
 
 if __name__ == '__main__':
