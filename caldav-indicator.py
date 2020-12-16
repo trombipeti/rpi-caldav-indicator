@@ -5,6 +5,7 @@ import threading
 from datetime import date, datetime, timedelta
 try:
     from RPLCD.gpio import CharLCD
+    from RPi import GPIO
     has_lcd = True
 except ImportError:
     has_lcd = False
@@ -27,6 +28,14 @@ class CalendarDisplayEvent(object):
 class LCDIndicator(object):
 
     DISPLAY_UPDATE_FREQ = 5 # Hz
+    LCD_RS = 8
+    LCD_RW = 10
+    LCD_E = 12
+    LCD_BL = 13
+    LCD_DB4 = 3
+    LCD_DB5 = 5
+    LCD_DB6 = 7
+    LCD_DB7 = 11
 
     def __init__(self):
         super(LCDIndicator, self).__init__()
@@ -35,6 +44,19 @@ class LCDIndicator(object):
         self.manual_lcd_status = None
         self._first_line = ""
         self._second_line = ""
+
+        self.lcd = None
+        if has_lcd:
+            self.lcd = CharLCD(
+                pin_rs = self.LCD_RS,
+                pin_rw = self.LCD_RW,
+                pin_e = self.LCD_E,
+                pin_backlight = self.LCD_BL,
+                backlight_enabled = False,
+                backlight_mode = 'active_high',
+                numbering_mode = GPIO.BOARD,
+                pins_data = [self.LCD_DB4, self.LCD_DB5, self.LCD_DB6, self.LCD_DB7]
+            )
 
         self._display_thread = threading.Thread(target = self._update_display_loop, args = ())
         self._display_thread_lock = threading.Lock()
@@ -48,7 +70,7 @@ class LCDIndicator(object):
 
     def force_on_lcd(self):
         self.manual_lcd_status = True
-        self._turn_on_lcd
+        self._turn_on_lcd()
 
     def clear_force_lcd(self):
         self.manual_lcd_status = None
@@ -57,23 +79,25 @@ class LCDIndicator(object):
         if self.manual_lcd_status != True:
             self.is_lcd_on = False
             if has_lcd:
-                pass
+                self.lcd.backlight_enabled = False
 
     def _turn_on_lcd(self):
         if self.manual_lcd_status != False:
             self.is_lcd_on = True
             if has_lcd:
-                pass
+                self.lcd.backlight_enabled = True
 
     def _display_first_line(self):
         if has_lcd:
-            pass
+            self.lcd.cursor_pos = (0, 0)
+            lcd.write_string(self._first_line)
         elif self.is_lcd_on:
             print('F:', self._first_line)
 
     def _display_second_line(self):
         if has_lcd:
-            pass
+            self.lcd.cursor_pos = (1, 0)
+            lcd.write_string(self._second_line)
         elif self.is_lcd_on:
             print('S:', self._second_line)
 
