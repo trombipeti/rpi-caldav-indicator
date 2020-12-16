@@ -33,9 +33,7 @@ class LCDIndicator(object):
         self.current_event = None
         self.is_lcd_on = False
         self.manual_lcd_status = None
-        self._first_line_position = 0
         self._first_line = ""
-        self._second_line_position = 0
         self._second_line = ""
 
         self._display_thread = threading.Thread(target = self._update_display_loop, args = ())
@@ -67,41 +65,21 @@ class LCDIndicator(object):
             if has_lcd:
                 pass
 
-    def _scroll_line(self, line, current_start):
-        if len(line) <= 16:
-            return (line, current_start)
-        else:
-            double_line = line + " "*6 + line
-            line_part = double_line[current_start : current_start + 16]
-            if current_start == len(line) + 5:
-                current_start = 0
-            else:
-                current_start += 1
-            return (line_part, current_start)
-
     def _display_first_line(self):
         if has_lcd:
             pass
         elif self.is_lcd_on:
-            scroll_data = self._scroll_line(self._first_line, self._first_line_position)
-            line = scroll_data[0]
-            self._first_line_position = scroll_data[1]
-            print("F:", line)
+            print('F:', self._first_line)
 
     def _display_second_line(self):
         if has_lcd:
             pass
         elif self.is_lcd_on:
-            scroll_data = self._scroll_line(self._second_line, self._second_line_position)
-            line = scroll_data[0]
-            self._second_line_position = scroll_data[1]
-            print("S:", line)
+            print('S:', self._second_line)
 
     def _on_new_event(self):
-        self._first_line_position = 0
-        self._first_line = '{0} {1}-{2}'.format(self.current_event.name, self.current_event.start_time, self.current_event.end_time)
-        self._second_line_position = 0
-        self._second_line = ', '.join(self.current_event.participants)
+        self._first_line = 'Meeting' if len(self.current_event.name) > 16 else self.current_event.name
+        self._second_line = '{0}-{1}'.format(self.current_event.start_time, self.current_event.end_time)
 
     def set_current_event(self, event):
         with self._event_lock:
@@ -150,6 +128,7 @@ class LCDIndicator(object):
 class CalDAVIndicator(object):
 
     POLL_TIMEOUT = 60 # 10 seconds
+    DISPLAY_SINGLE_EVENTS = False
 
     def __init__(self):
         super(CalDAVIndicator, self).__init__()
