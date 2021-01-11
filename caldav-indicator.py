@@ -152,7 +152,7 @@ class LCDIndicator(object):
 class CalDAVIndicator(object):
 
     POLL_TIMEOUT = 60 # 10 seconds
-    DISPLAY_SINGLE_EVENTS = False
+    DISPLAY_SINGLE_EVENTS = True
 
     def __init__(self):
         super(CalDAVIndicator, self).__init__()
@@ -228,7 +228,7 @@ class CalDAVIndicator(object):
 
 
     def _poll_events(self):
-        if self._is_working_toggl() or True:
+        if self._is_working_toggl():
             current_events = self.calendar.date_search(
                 start = datetime.now() - timedelta(days = 3), end = datetime.now(), expand = False
             )
@@ -240,6 +240,7 @@ class CalDAVIndicator(object):
                 participants = current_event.vobject_instance.vevent.contents.get('attendee')
                 participant_names = []
                 if participants is not None or self.DISPLAY_SINGLE_EVENTS:
+                    participants = [] if participants is None else participants
                     for p in participants:
                         name = p.params.get('CN')[0]
                         status = p.params.get('PARTSTAT')[0]
