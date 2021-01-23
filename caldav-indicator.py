@@ -28,9 +28,9 @@ class CalendarDisplayEvent(object):
 class LCDIndicator(object):
 
     DISPLAY_UPDATE_FREQ = 5 # Hz
-    LCD_RS = 8
-    LCD_RW = 10
-    LCD_E = 12
+    LCD_E = 8
+    LCD_RS = 10
+    LCD_RW = 12
     LCD_BL = 13
     LCD_DB4 = 3
     LCD_DB5 = 5
@@ -90,14 +90,14 @@ class LCDIndicator(object):
     def _display_first_line(self):
         if has_lcd:
             self.lcd.cursor_pos = (0, 0)
-            lcd.write_string(self._first_line)
+            self.lcd.write_string(self._first_line)
         elif self.is_lcd_on:
             print('F:', self._first_line)
 
     def _display_second_line(self):
         if has_lcd:
             self.lcd.cursor_pos = (1, 0)
-            lcd.write_string(self._second_line)
+            self.lcd.write_string(self._second_line)
         elif self.is_lcd_on:
             print('S:', self._second_line)
 
