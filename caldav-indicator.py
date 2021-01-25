@@ -32,9 +32,9 @@ class LCDIndicator(object):
     LCD_RS = 10
     LCD_RW = 12
     LCD_BL = 13
-    LCD_DB4 = 3
-    LCD_DB5 = 5
-    LCD_DB6 = 7
+    LCD_DB4 = 15
+    LCD_DB5 = 16
+    LCD_DB6 = 19
     LCD_DB7 = 11
 
     def __init__(self):
