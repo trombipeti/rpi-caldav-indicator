@@ -72,7 +72,7 @@ class LCDIndicator(object):
         self.manual_lcd_status = True
         self._turn_on_lcd()
 
-    def clear_force_lcd(self):
+    def reset_force_lcd(self):
         self.manual_lcd_status = None
 
     def _turn_off_lcd(self):
@@ -102,7 +102,8 @@ class LCDIndicator(object):
             print('S:', self._second_line)
 
     def _on_new_event(self):
-        self.lcd.clear()
+        if has_lcd:
+            self.lcd.clear()
         self._first_line = 'Meeting' if len(self.current_event.name) > 16 else self.current_event.name
         self._second_line = '{0}-{1}'.format(self.current_event.start_time, self.current_event.end_time)
 
@@ -137,8 +138,11 @@ class LCDIndicator(object):
         while not self._should_stop_display_thread():
             self._update_display()
             time.sleep(1.0 / self.DISPLAY_UPDATE_FREQ)
-        self.lcd.clear()
-        self.force_off_lcd()
+
+        if has_lcd:
+            self.lcd.clear()
+            self.force_off_lcd()
+            GPIO.cleanup()
 
     def _update_display(self):
         current_event = self.get_current_event()
@@ -164,6 +168,8 @@ class CalDAVIndicator(object):
         self.client = caldav.DAVClient(url = self.url, username =  self.username, password = self.password)
         self.calendar = caldav.Calendar(client = self.client, url = self.url)
         self.lcd_indicator = LCDIndicator()
+
+        self._last_event_was_manual = False
 
         self._poll_events_thread_lock = threading.Lock()
         self._poll_events_thread = threading.Thread(target = self._poll_events_loop, args = ())
@@ -229,6 +235,9 @@ class CalDAVIndicator(object):
                 last_poll = timer()
             time.sleep(0.1)
 
+    def _on_poll_no_events(self):
+        if not self._last_event_was_manual:
+            self.lcd_indicator.set_current_event(None)
 
     def _poll_events(self):
         if self._is_working_toggl():
@@ -254,10 +263,11 @@ class CalDAVIndicator(object):
                             participant_names.append(name)
                     display_event = CalendarDisplayEvent(event_name, event_start, event_end, participant_names)
                     self.lcd_indicator.set_current_event(display_event)
+                    self._last_event_was_manual = False
             else:
-                self.lcd_indicator.set_current_event(None)
+                self._on_poll_no_events()
         else:
-            self.lcd_indicator.set_current_event(None)
+            self._on_poll_no_events()
 
     def _config_menu(self):
         print(
@@ -279,7 +289,7 @@ class CalDAVIndicator(object):
                 pass
 
     def _manual_input_menu(self):
-        name = input("Event name: ")
+        name = input("Event name (empty to clear): ")
         if len(name.strip()) > 0:
             start = datetime.now().strftime("%-H:%M")
             end = input("End: ")
@@ -291,21 +301,24 @@ class CalDAVIndicator(object):
                     break
                 participants.append(p)
             self.lcd_indicator.set_current_event(CalendarDisplayEvent(name, start, end, participants))
+            self._last_event_was_manual = True
+        else:
+            self.lcd_indicator.set_current_event(None)
 
     def _display_menu(self):
         print(
             'Display\n'
             ' on\n'
             ' off\n'
-            ' clear'
+            ' reset'
         )
         choice = input('> ')
         if choice == 'on':
             self.lcd_indicator.force_on_lcd()
         elif choice == 'off':
             self.lcd_indicator.force_off_lcd()
-        elif choice == 'clear':
-            self.lcd_indicator.clear_force_lcd()
+        elif choice == 'reset':
+            self.lcd_indicator.reset_force_lcd()
 
     def _handle_user_input(self):
         print(
