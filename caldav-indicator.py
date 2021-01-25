@@ -230,7 +230,7 @@ class CalDAVIndicator(object):
     def _poll_events(self):
         if self._is_working_toggl():
             current_events = self.calendar.date_search(
-                start = datetime.now() - timedelta(days = 3), end = datetime.now(), expand = False
+                start = datetime.now() - timedelta(minutes = 5), end = datetime.now() + timedelta(minutes = 5), expand = False
             )
             if len(current_events) > 0:
                 current_event = current_events[0]
