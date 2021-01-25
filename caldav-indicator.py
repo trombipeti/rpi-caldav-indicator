@@ -102,6 +102,7 @@ class LCDIndicator(object):
             print('S:', self._second_line)
 
     def _on_new_event(self):
+        self.lcd.clear()
         self._first_line = 'Meeting' if len(self.current_event.name) > 16 else self.current_event.name
         self._second_line = '{0}-{1}'.format(self.current_event.start_time, self.current_event.end_time)
 
@@ -109,7 +110,7 @@ class LCDIndicator(object):
         with self._event_lock:
             new_event = False
             if self.current_event is not None and event is None:
-                print(self.current_event.name, "ended")
+                print(self.current_event.name, "ended", self.current_event.end_time)
             elif self.current_event != event:
                 new_event = True
             self.current_event = event
@@ -136,6 +137,8 @@ class LCDIndicator(object):
         while not self._should_stop_display_thread():
             self._update_display()
             time.sleep(1.0 / self.DISPLAY_UPDATE_FREQ)
+        self.lcd.clear()
+        self.force_off_lcd()
 
     def _update_display(self):
         current_event = self.get_current_event()
