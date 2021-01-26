@@ -159,6 +159,7 @@ class LCDIndicator(object):
             self._display_second_line()
             pass
         elif self.is_lcd_on:
+            self.lcd.clear()
             self._turn_off_lcd()
 
 
