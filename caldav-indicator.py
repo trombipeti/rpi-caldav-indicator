@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import caldav
 import time
 from timeit import default_timer as timer
@@ -57,6 +59,7 @@ class LCDIndicator(object):
                 numbering_mode = GPIO.BOARD,
                 pins_data = [self.LCD_DB4, self.LCD_DB5, self.LCD_DB6, self.LCD_DB7]
             )
+            self.lcd.cursor_mode = 'hide'
 
         self._display_thread = threading.Thread(target = self._update_display_loop, args = ())
         self._display_thread_lock = threading.Lock()
@@ -104,6 +107,9 @@ class LCDIndicator(object):
     def _on_new_event(self):
         if has_lcd:
             self.lcd.clear()
+            self.lcd.cursor_pos = (0, 0)
+            self.lcd.cursor_mode = 'hide'
+            time.sleep(1)
         self._first_line = 'Meeting' if len(self.current_event.name) > 16 else self.current_event.name
         self._second_line = '{0}-{1}'.format(self.current_event.start_time, self.current_event.end_time)
 
