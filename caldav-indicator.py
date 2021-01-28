@@ -14,6 +14,8 @@ except ImportError:
 import requests
 from requests.auth import HTTPBasicAuth
 import json
+import flask
+app = flask.Flask(__name__)
 
 class CalendarDisplayEvent(object):
     def __init__(self, name, start_time, end_time, participants):
@@ -374,6 +376,22 @@ class CalDAVIndicator(object):
         self.lcd_indicator.stop_display_thread()
         self.stop_poll_events_thread()
 
+indicator = None
+
+@app.route('/')
+def show_homepage():
+    return flask.render_template('index.html')
+
+@app.route('/update-event', methods=['POST'])
+def update_event():
+    name = flask.request.form["event-name"]
+    start = flask.request.form["event-start"]
+    end = flask.request.form["event-end"]
+    new_event = CalendarDisplayEvent(name, start, end, [])
+    return flask.redirect(flask.url_for('/'))
 
 if __name__ == '__main__':
-    CalDAVIndicator().main_loop()
+    indicator = CalDAVIndicator()
+    indicator_thread = threading.Thread(target = indicator.main_loop, args = ())
+    indicator_thread.start()
+    app.run()
