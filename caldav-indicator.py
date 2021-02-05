@@ -388,10 +388,11 @@ def update_event():
     start = flask.request.form["event-start"]
     end = flask.request.form["event-end"]
     new_event = CalendarDisplayEvent(name, start, end, [])
-    return flask.redirect(flask.url_for('/'))
+    indicator.lcd_indicator.set_current_event(new_event)
+    return flask.redirect('/')
 
 if __name__ == '__main__':
     indicator = CalDAVIndicator()
     indicator_thread = threading.Thread(target = indicator.main_loop, args = ())
     indicator_thread.start()
-    app.run()
+    app.run(host = '192.168.0.70', port = '5000')
