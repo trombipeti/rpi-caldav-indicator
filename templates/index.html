@@ -13,16 +13,26 @@
   <body>
     <div class="container">
       <h1>Munka kijelző admin</h1>
-      <form action="/update-event" method="post">
-        <div class="row">
-          <div class="col-lg-1"><label for="event-name">Név:</label></div>
-          <div class="col-lg-3"><input type="text" name="event-name"></div>
-          <div class="col-lg-1"><label for="event-name">Kezdet:</label></div>
-          <div class="col-lg-3"><input type="text" name="event-start"></div>
-          <div class="col-lg-1"><label for="event-name">Vég:</label></div>
-          <div class="col-lg-3"><input type="text" name="event-end"></div>
-          <div class="col-lg-1"><input type="submit"></div>
+      <h2>Esemény megadása</h2>
+      <form action="/update-event" method="post" class="form-inline">
+        <div class="form-group">
+          <input type="text" name="event-name" class="form-control mr-2" placeholder="Név">
+          <input type="text" name="event-start" class="form-control mr-2" placeholder="Kezdet">
+          <input type="text" name="event-end" class="form-control mr-2" placeholder="Vég">
+          <button type="submit" class="btn btn-success">Küldés</button>
         </div>
+      </form>
+      <h2>Jelenlegi esemény kezelése</h2>
+      <h3 class="text-success" id="current-event">{{ event_name }}</h3>
+      <form action="/extend-event" method="post" class="form-inline">
+        <div class="form-group">
+          <label for="extend-minutes" class="mr-2">Hosszabbítás (perc):</label>
+          <input type="text" name="extend-minutes" class="form-control mr-2" value="5">
+          <button type="submit" class="btn btn-success">Küldés</button>
+        </div>
+      </form>
+      <form action="/stop-event" method="post">
+        <button type="submit" class="btn btn-danger">Leállítás</button>
       </form>
     </div>
 

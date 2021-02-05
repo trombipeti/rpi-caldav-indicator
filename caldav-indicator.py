@@ -172,7 +172,8 @@ class LCDIndicator(object):
             self._display_second_line()
             pass
         elif self.is_lcd_on:
-            self.lcd.clear()
+            if has_lcd:
+                self.lcd.clear()
             self._turn_off_lcd()
 
 
@@ -265,7 +266,7 @@ class CalDAVIndicator(object):
     def _on_poll_no_events(self):
         if not self._last_event_was_manual:
             self.lcd_indicator.set_current_event(None)
-        else:
+        elif self.lcd_indicator.get_current_event():
             if self.lcd_indicator.get_current_event().get_end_datetime() < (datetime.now() + timedelta(minutes = 5)):
                 self.lcd_indicator.set_current_event(None)
 
@@ -386,7 +387,9 @@ indicator = None
 
 @app.route('/')
 def show_homepage():
-    return flask.render_template('index.html')
+    event = indicator.lcd_indicator.get_current_event()
+    event_name = event.name if event else ""
+    return flask.render_template('index.html', event_name = event_name)
 
 @app.route('/update-event', methods=['POST'])
 def update_event():
@@ -395,6 +398,24 @@ def update_event():
     end = flask.request.form["event-end"]
     new_event = CalendarDisplayEvent(name, start, end, [])
     indicator.set_manual_event(new_event)
+    return flask.redirect('/')
+
+@app.route('/extend-event', methods=['POST'])
+def extend_event():
+    try:
+        minutes = int(flask.request.form["extend-minutes"])
+        current_event = indicator.lcd_indicator.get_current_event()
+        if current_event:
+            new_end_datetime = current_event.get_end_datetime() + timedelta(minutes = minutes)
+            current_event.end_time = new_end_datetime.strftime("%-H:%M")
+            indicator.set_manual_event(current_event)
+    except ValueError:
+        pass
+    return flask.redirect('/')
+
+@app.route('/stop-event', methods=['POST'])
+def stop_event():
+    indicator.lcd_indicator.set_current_event(None)
     return flask.redirect('/')
 
 if __name__ == '__main__':
