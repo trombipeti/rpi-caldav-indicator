@@ -23,13 +23,22 @@ class CalendarDisplayEvent(object):
         self.end_time = end_time
         self.participants = participants
 
+    def get_end_datetime(self):
+        hm = self.end_time.split(':')
+        result = datetime.now()
+        try:
+            result = result.replace(hour = int(hm[0]), minute = int(hm[1]), second = 59)
+        except ValueError:
+            pass
+        return result
+
     def __eq__(self, other):
         return other and self.name == other.name and self.start_time == other.start_time and self.end_time == other.end_time
 
 
 class LCDIndicator(object):
 
-    DISPLAY_UPDATE_FREQ = 5 # Hz
+    DISPLAY_UPDATE_FREQ = 1 # Hz
     LCD_E = 8
     LCD_RS = 10
     LCD_RW = 12
@@ -115,6 +124,7 @@ class LCDIndicator(object):
 
     def set_current_event(self, event):
         with self._event_lock:
+            print("Set current event:", event.name if event is not None else event)
             new_event = False
             if self.current_event is not None and event is None:
                 print(self.current_event.name, "ended", self.current_event.end_time)
@@ -165,7 +175,7 @@ class LCDIndicator(object):
 
 class CalDAVIndicator(object):
 
-    POLL_TIMEOUT = 60 # 10 seconds
+    POLL_TIMEOUT = 20 # seconds
     DISPLAY_SINGLE_EVENTS = True
 
     def __init__(self):
@@ -223,6 +233,7 @@ class CalDAVIndicator(object):
         auth = HTTPBasicAuth(self.togglApiKey, 'api_token')
         r = requests.get("https://api.track.toggl.com/api/v8/time_entries/current", auth = auth)
         rd = json.loads(r.text)
+        print('Toggl response:', r.text)
         return rd['data'] is not None
 
     def stop_poll_events_thread(self):
@@ -245,8 +256,12 @@ class CalDAVIndicator(object):
     def _on_poll_no_events(self):
         if not self._last_event_was_manual:
             self.lcd_indicator.set_current_event(None)
+        else:
+            if self.lcd_indicator.get_current_event().get_end_datetime() < (datetime.now() + timedelta(minutes = 5)):
+                self.lcd_indicator.set_current_event(None)
 
     def _poll_events(self):
+        print(datetime.now(), "POLL")
         if self._is_working_toggl():
             current_events = self.calendar.date_search(
                 start = datetime.now() - timedelta(minutes = 5), end = datetime.now() + timedelta(minutes = 5), expand = False
@@ -272,8 +287,10 @@ class CalDAVIndicator(object):
                     self.lcd_indicator.set_current_event(display_event)
                     self._last_event_was_manual = False
             else:
+                print('No events')
                 self._on_poll_no_events()
         else:
+            print('Not working')
             self._on_poll_no_events()
 
     def _config_menu(self):
