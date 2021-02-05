@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import caldav
 import time
 from timeit import default_timer as timer
@@ -397,7 +398,13 @@ def update_event():
     return flask.redirect('/')
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('ip', help = 'IP Address for web server', default = '127.0.0.1', nargs = '?')
+    parser.add_argument('port', help = 'Port for web server', default = '5000', nargs = '?')
+    args = parser.parse_args()
+
     indicator = CalDAVIndicator()
     indicator_thread = threading.Thread(target = indicator.main_loop, args = ())
     indicator_thread.start()
-    app.run(host = '192.168.0.70', port = '5000')
+    app.run(host = args.ip, port = args.port)
