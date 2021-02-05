@@ -189,6 +189,7 @@ class CalDAVIndicator(object):
         self.lcd_indicator = LCDIndicator()
 
         self._last_event_was_manual = False
+        self._manual_event_lock = threading.Lock()
 
         self._poll_events_thread_lock = threading.Lock()
         self._poll_events_thread = threading.Thread(target = self._poll_events_loop, args = ())
@@ -237,6 +238,11 @@ class CalDAVIndicator(object):
         rd = json.loads(r.text)
         print('Toggl response:', r.text)
         return rd['data'] is not None
+
+    def set_manual_event(self, event):
+        with self._manual_event_lock:
+            self.lcd_indicator.set_current_event(event)
+            self._last_event_was_manual = True
 
     def stop_poll_events_thread(self):
         with self._poll_events_thread_lock:
@@ -326,8 +332,7 @@ class CalDAVIndicator(object):
                 if len(p.strip()) == 0:
                     break
                 participants.append(p)
-            self.lcd_indicator.set_current_event(CalendarDisplayEvent(name, start, end, participants))
-            self._last_event_was_manual = True
+            self.set_manual_event(CalendarDisplayEvent(name, start, end, participants))
         else:
             self.lcd_indicator.set_current_event(None)
 
@@ -388,7 +393,7 @@ def update_event():
     start = flask.request.form["event-start"]
     end = flask.request.form["event-end"]
     new_event = CalendarDisplayEvent(name, start, end, [])
-    indicator.lcd_indicator.set_current_event(new_event)
+    indicator.set_manual_event(new_event)
     return flask.redirect('/')
 
 if __name__ == '__main__':
