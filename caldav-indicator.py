@@ -197,6 +197,8 @@ class CalDAVIndicator(object):
         self._poll_events_thread = threading.Thread(target = self._poll_events_loop, args = ())
         self._stop_poll_events_thread = False
 
+        self._running_without_console = False
+
     def _parse_secret_file(self):
         try:
             with open('secret.txt', 'r') as sf:
@@ -354,6 +356,8 @@ class CalDAVIndicator(object):
             self.lcd_indicator.reset_force_lcd()
 
     def _handle_user_input(self):
+        if self._running_without_console:
+            return True
         print(
             'RPi CalDAV Indicator\n'
             ' c: configure\n'
@@ -361,16 +365,21 @@ class CalDAVIndicator(object):
             ' d: display menu\n'
             ' q: quit'
         )
-        choice = input('> ')
         app_running = True
-        if choice == 'c':
-            self._config_menu()
-        elif choice == 'm':
-            self._manual_input_menu()
-        elif choice == 'd':
-            self._display_menu()
-        elif choice == 'q':
-            app_running = False
+        try:
+            choice = input('> ')
+            if choice == 'c':
+                self._config_menu()
+            elif choice == 'm':
+                self._manual_input_menu()
+            elif choice == 'd':
+                self._display_menu()
+            elif choice == 'q':
+                app_running = False
+        except EOFError as e:
+            print(e)
+            self._running_without_console = True
+            app_running = True
         return app_running
 
     def main_loop(self):
