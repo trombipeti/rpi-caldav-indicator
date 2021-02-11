@@ -258,10 +258,10 @@ class CalDAVIndicator(object):
     def _poll_events_loop(self):
         last_poll = None
         while not self._should_stop_poll_events_thread():
-            if last_poll is None or timer() - last_poll >= self.POLL_TIMEOUT:
+            if last_poll is None or (timer() - last_poll) >= self.POLL_TIMEOUT:
                 self._poll_events()
                 last_poll = timer()
-            time.sleep(0.1)
+            time.sleep(1)
 
     def _on_poll_no_events(self):
         if not self._last_event_was_manual:
