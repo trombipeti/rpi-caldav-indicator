@@ -19,7 +19,7 @@ import flask
 app = flask.Flask(__name__)
 
 class CalendarDisplayEvent(object):
-    def __init__(self, name, start_time, end_time, participants):
+    def __init__(self, name, start_time, end_time, participants = []):
         super(CalendarDisplayEvent, self).__init__()
         self.name = name
         self.start_time = start_time
@@ -416,9 +416,10 @@ def extend_event():
         current_event = indicator.lcd_indicator.get_current_event()
         if current_event:
             new_end_datetime = current_event.get_end_datetime() + timedelta(minutes = minutes)
-            current_event.end_time = new_end_datetime.strftime("%-H:%M")
-            indicator.set_manual_event(current_event)
-    except ValueError:
+            new_event = CalendarDisplayEvent(current_event.name, current_event.start_time, new_end_datetime.strftime("%-H:%M"))
+            indicator.set_manual_event(new_event)
+    except ValueError as e:
+        print(e)
         pass
     return flask.redirect('/')
 
