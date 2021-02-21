@@ -240,7 +240,6 @@ class CalDAVIndicator(object):
         auth = HTTPBasicAuth(self.togglApiKey, 'api_token')
         r = requests.get("https://api.track.toggl.com/api/v8/time_entries/current", auth = auth)
         rd = json.loads(r.text)
-        print('Toggl response:', r.text)
         return rd['data'] is not None
 
     def set_manual_event(self, event):
@@ -266,11 +265,12 @@ class CalDAVIndicator(object):
             time.sleep(1)
 
     def _on_poll_no_events(self):
-        if not self._last_event_was_manual:
-            self.lcd_indicator.set_current_event(None)
-        elif self.lcd_indicator.get_current_event():
-            if self.lcd_indicator.get_current_event().get_end_datetime() < (datetime.now() + timedelta(minutes = 5)):
+        with self._manual_event_lock:
+            if not self._last_event_was_manual:
                 self.lcd_indicator.set_current_event(None)
+            elif self.lcd_indicator.get_current_event():
+                if self.lcd_indicator.get_current_event().get_end_datetime() < (datetime.now() + timedelta(minutes = 5)):
+                    self.lcd_indicator.set_current_event(None)
 
     def _poll_events(self):
         print(datetime.now(), "POLL")
