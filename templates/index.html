@@ -16,14 +16,22 @@
       <h2>Esemény megadása</h2>
       <form action="/update-event" method="post" class="form-inline">
         <div class="form-group">
-          <input type="text" name="event-name" class="form-control mr-sm-2 mb-2 mb-sm-0" placeholder="Név">
-          <input type="text" name="event-start" class="form-control mr-sm-2 mb-2 mb-sm-0" placeholder="Kezdet">
-          <input type="text" name="event-end" class="form-control mr-sm-2 mb-2 mb-sm-0" placeholder="Vég">
+          <input type="text" maxlength="16" name="event-name" class="form-control mr-sm-2 mb-2 mb-sm-0" placeholder="Név">
+          <input type="text" pattern="([0-9][0-9]?:[0-5][0-9])?"
+            name="event-start" class="form-control mr-sm-2 mb-2 mb-sm-0"
+            title="HH:MM"
+            placeholder="Kezdet">
+          <input type="text" pattern="([0-9][0-9]?:[0-5][0-9])?"
+            name="event-end" class="form-control mr-sm-2 mb-2 mb-sm-0"
+            title="HH:MM"
+            placeholder="Vég">
           <button type="submit" class="btn btn-success">Küldés</button>
         </div>
       </form>
       <h2>Jelenlegi esemény kezelése</h2>
-      <h3 class="text-success" id="current-event">{{ event_name }}</h3>
+      {% if event %}
+      <h3 class="text-success" id="current-event">{{ event.name }} ({{event.start_time}} - {{event.end_time}})</h3>
+      {% endif %}
       <form action="/extend-event" method="post" class="form-inline">
         <div class="form-group">
           <label for="extend-minutes" class="mr-2">Hosszabbítás (perc):</label>

@@ -397,8 +397,7 @@ indicator = None
 @app.route('/')
 def show_homepage():
     event = indicator.lcd_indicator.get_current_event()
-    event_name = event.name if event else ""
-    return flask.render_template('index.html', event_name = event_name)
+    return flask.render_template('index.html', event = event)
 
 @app.route('/update-event', methods=['POST'])
 def update_event():
